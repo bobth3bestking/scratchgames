@@ -42,150 +42,139 @@
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .btn-nav {
+            @apply px-6 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-semibold;
         }
+        
+        #errorNotice { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- Header -->
     <header class="max-w-7xl mx-auto mb-12 text-center">
         <h1 class="text-4xl md:text-6xl font-extrabold mb-4 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
             Scratch Game Hub
         </h1>
-        <p class="text-slate-400 text-lg mb-8">Discover and play Scratch projects with enhanced performance.</p>
+        <p class="text-slate-400 text-lg mb-8">Play millions of community games on any device.</p>
 
-        <!-- Search Bar -->
         <div class="relative max-w-xl mx-auto">
             <input type="text" id="searchInput" 
                 placeholder="Search games (e.g. Platformer, 3D)..." 
                 class="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500 shadow-xl">
-            <button onclick="handleSearch()" class="absolute right-2 top-2 bottom-2 px-6 bg-blue-600 hover:bg-blue-700 rounded-full font-semibold transition-colors">
+            <button onclick="newSearch()" class="absolute right-2 top-2 bottom-2 px-6 bg-blue-600 hover:bg-blue-700 rounded-full font-semibold transition-colors">
                 Search
             </button>
         </div>
     </header>
 
-    <!-- Main Grid -->
     <main class="max-w-7xl mx-auto">
+        <div id="errorNotice" class="max-w-xl mx-auto mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-center">
+            <p id="errorMessage" class="text-red-400 font-medium"></p>
+            <button onclick="loadContent(true)" class="mt-2 text-sm text-blue-400 hover:underline">Try using CORS Proxy Fallback</button>
+        </div>
+
         <div id="loadingIndicator" class="flex justify-center my-12 hidden">
             <div class="spinner"></div>
         </div>
-        <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- Dynamic items go here -->
+        
+        <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+
+        <div class="flex justify-center items-center gap-4 mt-12 pb-12">
+            <button id="prevBtn" onclick="changePage(-1)" class="btn-nav">← Previous</button>
+            <span id="pageDisplay" class="text-slate-400 font-medium">Page 1</span>
+            <button id="nextBtn" onclick="changePage(1)" class="btn-nav">Next →</button>
         </div>
     </main>
 
-    <!-- Player Overlay -->
     <div id="gameModal" onclick="closePlayer()">
         <div class="relative w-full max-w-5xl p-4" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 text-white">
                 <div>
-                    <h2 id="modalTitle" class="text-xl md:text-2xl font-bold">Game Title</h2>
+                    <h2 id="modalTitle" class="text-xl md:text-2xl font-bold">Game</h2>
                     <p id="modalAuthor" class="text-slate-400 text-sm">by Author</p>
                 </div>
-                <button onclick="closePlayer()" class="bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-lg font-bold transition-all">
-                    &times; Close Game
+                <button onclick="closePlayer()" class="bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-lg font-bold">
+                    &times; Close
                 </button>
             </div>
             
-            <!-- Player Wrapper -->
             <div class="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-700 relative">
-                <iframe id="playerFrame" src="" 
-                    class="w-full h-full" 
-                    allowtransparency="true" 
-                    frameborder="0" 
-                    allowfullscreen></iframe>
+                <iframe id="playerFrame" src="" class="w-full h-full" allowtransparency="true" frameborder="0" allowfullscreen></iframe>
             </div>
 
             <div class="mt-4 flex flex-wrap gap-4 items-center justify-between">
                 <div class="flex gap-2">
-                    <button onclick="togglePlayer('turbowarp')" class="px-4 py-2 bg-blue-600 rounded-md text-sm font-semibold hover:bg-blue-700 transition">TurboWarp (Recommended)</button>
-                    <button onclick="togglePlayer('scratch')" class="px-4 py-2 bg-slate-700 rounded-md text-sm font-semibold hover:bg-slate-600 transition">Official Scratch</button>
+                    <button onclick="togglePlayer('turbowarp')" class="px-4 py-2 bg-blue-600 rounded-md text-sm font-semibold hover:bg-blue-700">TurboWarp</button>
+                    <button onclick="togglePlayer('scratch')" class="px-4 py-2 bg-slate-700 rounded-md text-sm font-semibold hover:bg-slate-600">Scratch</button>
                 </div>
-                <a id="scratchLink" href="#" target="_blank" class="text-blue-400 hover:underline text-sm font-medium">View Project on Scratch &nearrow;</a>
+                <a id="scratchLink" href="#" target="_blank" class="text-blue-400 hover:underline text-sm">View on Scratch &nearrow;</a>
             </div>
         </div>
     </div>
 
     <script>
-        const gameGrid = document.getElementById('gameGrid');
-        const searchInput = document.getElementById('searchInput');
-        const loadingIndicator = document.getElementById('loadingIndicator');
+        let offset = 0;
+        const limit = 24;
         let currentProject = null;
+        let useProxy = false;
 
-        async function fetchTrending() {
+        async function loadContent(forceProxy = false) {
+            if (forceProxy) useProxy = true;
             showLoading(true);
+            hideError();
+
+            const query = document.getElementById('searchInput').value.trim();
+            let baseUrl = query 
+                ? `https://api.scratch.mit.edu{limit}&offset=${offset}&q=${encodeURIComponent(query)}`
+                : `https://api.scratch.mit.edu{limit}&offset=${offset}&mode=trending&q=games`;
+
+            const url = useProxy ? `https://corsproxy.io{encodeURIComponent(baseUrl)}` : baseUrl;
+
             try {
-                const response = await fetch('https://api.scratch.mit.edu');
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API returned ${response.status}`);
                 const data = await response.json();
                 renderGames(data);
-            } catch (error) {
-                console.error("API Error:", error);
-                gameGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-400 mb-2">Could not connect to Scratch API.</p><p class="text-slate-500 text-sm">If you opened this file directly from your disk, try uploading it to a host like GitHub Pages.</p></div>`;
+                updatePaginationUI();
+            } catch (err) {
+                console.error("Fetch failure:", err);
+                showError(useProxy ? "Severe error: Even the proxy failed. Check your internet." : "CORS Error: GitHub is blocking the Scratch API. Click below to try the proxy.");
             }
             showLoading(false);
         }
 
-        async function handleSearch() {
-            const query = searchInput.value.trim();
-            if (!query) return;
-            showLoading(true);
-            try {
-                const response = await fetch(`https://api.scratch.mit.edu{encodeURIComponent(query)}`);
-                const data = await response.json();
-                renderGames(data);
-            } catch (error) { console.error("Search Error:", error); }
-            showLoading(false);
-        }
-
         function renderGames(projects) {
-            gameGrid.innerHTML = '';
-            projects.forEach(project => {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            projects.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'game-card bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-slate-700';
-                const thumb = `https://cdn2.scratch.mit.edu{project.id}_282x210.png`;
-                
                 card.innerHTML = `
-                    <div class="relative group">
-                        <img src="${thumb}" alt="${project.title}" class="w-full aspect-video object-cover">
-                        <div class="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span class="bg-blue-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">Play Now</span>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-slate-100 truncate">${project.title}</h3>
-                        <p class="text-slate-500 text-sm">@${project.author.username}</p>
-                    </div>
+                    <img src="https://cdn2.scratch.mit.edu{p.id}_282x210.png" class="w-full aspect-video object-cover">
+                    <div class="p-4"><h3 class="font-bold truncate">${p.title}</h3><p class="text-slate-500 text-sm">@${p.author.username}</p></div>
                 `;
-                card.onclick = () => openPlayer(project);
-                gameGrid.appendChild(card);
+                card.onclick = () => openPlayer(p);
+                grid.appendChild(card);
             });
         }
 
-        function openPlayer(project) {
-            currentProject = project;
-            document.getElementById('modalTitle').innerText = project.title;
-            document.getElementById('modalAuthor').innerText = `by ${project.author.username}`;
-            document.getElementById('scratchLink').href = `https://scratch.mit.edu{project.id}/`;
-            
-            // Default to TurboWarp for better compatibility in various origins
+        function openPlayer(p) {
+            currentProject = p;
+            document.getElementById('modalTitle').innerText = p.title;
+            document.getElementById('modalAuthor').innerText = `by ${p.author.username}`;
+            document.getElementById('scratchLink').href = `https://scratch.mit.edu{p.id}/`;
             togglePlayer('turbowarp');
-            
             document.getElementById('gameModal').style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
 
         function togglePlayer(type) {
-            if (!currentProject) return;
             const frame = document.getElementById('playerFrame');
-            if (type === 'turbowarp') {
-                frame.src = `https://turbowarp.org{currentProject.id}/embed?autoplay=true`;
-            } else {
-                frame.src = `https://scratch.mit.edu{currentProject.id}/embed?autostart=true`;
-            }
+            frame.src = type === 'turbowarp' 
+                ? `https://turbowarp.org{currentProject.id}/embed?autoplay=true`
+                : `https://scratch.mit.edu{currentProject.id}/embed?autostart=true`;
         }
 
         function closePlayer() {
@@ -194,13 +183,16 @@
             document.body.style.overflow = 'auto';
         }
 
-        function showLoading(active) {
-            loadingIndicator.classList.toggle('hidden', !active);
-            if (active) gameGrid.innerHTML = '';
+        function changePage(step) { offset += (step * limit); if (offset < 0) offset = 0; loadContent(); }
+        function newSearch() { offset = 0; loadContent(); }
+        function updatePaginationUI() {
+            document.getElementById('pageDisplay').innerText = `Page ${Math.floor(offset/limit) + 1}`;
+            document.getElementById('prevBtn').disabled = (offset === 0);
         }
-
-        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
-        window.onload = fetchTrending;
+        function showLoading(a) { document.getElementById('loadingIndicator').classList.toggle('hidden', !a); if(a) document.getElementById('gameGrid').innerHTML = ''; }
+        function showError(m) { document.getElementById('errorNotice').style.display = 'block'; document.getElementById('errorMessage').innerText = m; }
+        function hideError() { document.getElementById('errorNotice').style.display = 'none'; }
+        window.onload = () => loadContent();
     </script>
 </body>
 </html>
