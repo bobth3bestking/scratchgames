@@ -126,7 +126,7 @@
             hideError();
 
             const query = document.getElementById('searchInput').value.trim();
-            let baseUrl = query 
+            const baseUrl = query 
                 ? `https://api.scratch.mit.edu{limit}&offset=${offset}&q=${encodeURIComponent(query)}`
                 : `https://api.scratch.mit.edu{limit}&offset=${offset}&mode=trending&q=games`;
 
@@ -140,7 +140,7 @@
                 updatePaginationUI();
             } catch (err) {
                 console.error("Fetch failure:", err);
-                showError(useProxy ? "Severe error: Even the proxy failed. Check your internet." : "CORS Error: GitHub is blocking the Scratch API. Click below to try the proxy.");
+                showError(useProxy ? "Severe error: Even the proxy failed." : "CORS Error: GitHub is blocking the Scratch API. Click below to try the proxy.");
             }
             showLoading(false);
         }
@@ -151,9 +151,15 @@
             projects.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'game-card bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-slate-700';
+                
+                const thumbUrl = `https://cdn2.scratch.mit.edu{p.id}_282x210.png`;
+                
                 card.innerHTML = `
-                    <img src="https://cdn2.scratch.mit.edu{p.id}_282x210.png" class="w-full aspect-video object-cover">
-                    <div class="p-4"><h3 class="font-bold truncate">${p.title}</h3><p class="text-slate-500 text-sm">@${p.author.username}</p></div>
+                    <img src="${thumbUrl}" class="w-full aspect-video object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold truncate">${p.title}</h3>
+                        <p class="text-slate-500 text-sm">@${p.author.username}</p>
+                    </div>
                 `;
                 card.onclick = () => openPlayer(p);
                 grid.appendChild(card);
@@ -171,6 +177,7 @@
         }
 
         function togglePlayer(type) {
+            if (!currentProject) return;
             const frame = document.getElementById('playerFrame');
             frame.src = type === 'turbowarp' 
                 ? `https://turbowarp.org{currentProject.id}/embed?autoplay=true`
@@ -189,10 +196,10 @@
             document.getElementById('pageDisplay').innerText = `Page ${Math.floor(offset/limit) + 1}`;
             document.getElementById('prevBtn').disabled = (offset === 0);
         }
-        function showLoading(a) { document.getElementById('loadingIndicator').classList.toggle('hidden', !a); if(a) document.getElementById('gameGrid').innerHTML = ''; }
+        function showLoading(a) { document.getElementById('loadingIndicator').classList.toggle('hidden', !a); }
         function showError(m) { document.getElementById('errorNotice').style.display = 'block'; document.getElementById('errorMessage').innerText = m; }
         function hideError() { document.getElementById('errorNotice').style.display = 'none'; }
         window.onload = () => loadContent();
     </script>
 </body>
-</html>
+</html
