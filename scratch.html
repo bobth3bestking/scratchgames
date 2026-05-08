@@ -17,7 +17,6 @@
         }
 
         * {
-
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -37,7 +36,6 @@
 
         .container {
             width: 100%;
-
             max-width: 900px;
             text-align: center;
         }
@@ -57,7 +55,6 @@
 
         p.subtitle {
             color: var(--text-dim);
-
             font-size: 1.1rem;
             letter-spacing: 0.5px;
         }
@@ -77,7 +74,6 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-
             max-width: 500px;
             margin: 0 auto;
         }
@@ -97,7 +93,6 @@
 
         input[type="text"]:focus {
             border-color: var(--primary);
-
             box-shadow: 0 0 15px var(--accent-glow);
         }
 
@@ -117,7 +112,6 @@
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-
             transition: all 0.3s ease;
             font-weight: 600;
             color: var(--text);
@@ -137,7 +131,6 @@
 
         .chevron {
             width: 12px;
-
             height: 12px;
             border-right: 2px solid var(--text-dim);
             border-bottom: 2px solid var(--text-dim);
@@ -157,7 +150,6 @@
             left: 0;
             right: 0;
             background: var(--dropdown-bg);
-
             border: 2px solid var(--primary);
             border-top: none;
             border-bottom-left-radius: 12px;
@@ -177,7 +169,6 @@
             padding: 14px 20px;
             cursor: pointer;
             transition: all 0.2s;
-
             text-align: left;
             display: flex;
             align-items: center;
@@ -197,7 +188,6 @@
 
         .option-item.selected {
             background: rgba(76, 151, 255, 0.1);
-
             color: var(--primary);
             font-weight: bold;
         }
@@ -217,7 +207,6 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
             margin-top: 10px;
-
         }
 
         .play-main-btn:hover {
@@ -237,7 +226,6 @@
             justify-content: center;
             gap: 25px;
             font-size: 0.95rem;
-
             color: var(--text-dim);
         }
 
@@ -257,7 +245,6 @@
             box-shadow: 0 25px 70px rgba(0,0,0,0.9);
             border: 5px solid var(--card-bg);
             display: none;
-
             margin-top: 30px;
             animation: fadeIn 0.8s ease-out;
         }
@@ -277,7 +264,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-
             border: none;
         }
 
@@ -297,7 +283,6 @@
         }
 
         .status-msg {
-
             margin-top: 20px;
             padding: 15px;
             border-radius: 10px;
@@ -317,7 +302,6 @@
 <body>
 
     <div class="container">
-
         <header>
             <h1>Scratch Game Portal</h1>
             <p class="subtitle">Ultimate performance & school filter bypass</p>
@@ -336,8 +320,7 @@
                         <div class="option-item selected" onclick="selectEngine('turbowarp', 'TurboWarp (Fastest)')">TurboWarp</div>
                         <div class="option-item" onclick="selectEngine('forkphorus', 'Forkphorus (Good for blocks)')">Forkphorus</div>
                         <div class="option-item" onclick="selectEngine('snail', 'Snail IDE')">Snail</div>
-                        <div class="option-item" onclick="selectEngine('api-handshake', 'API Handshake (Advanced)')">API Handshake</div>
-
+                        <div class="option-item" onclick="selectEngine('api-handshake', 'jay made')">jay made</div>
                         <div class="option-item" onclick="selectEngine('scratch-bypass', 'Scratch Bypass (.)')">Scratch Bypass (.)</div>
                         <div class="option-item" onclick="selectEngine('scratch', 'Official Scratch')">Official Scratch</div>
                     </div>
@@ -357,7 +340,6 @@
         <main id="gameContainer">
             <div class="placeholder" id="placeholder">
                 <p>READY FOR DEPLOYMENT</p>
-
             </div>
             <div class="game-viewer" id="viewer">
                 <iframe id="gameIframe" allowtransparency="true" allowfullscreen allow="geolocation; microphone; camera"></iframe>
@@ -376,7 +358,6 @@
             const header = document.getElementById('selectHeader');
             header.classList.toggle('open');
         }
-
 
         function selectEngine(engine, label) {
             currentEngine = engine;
@@ -398,7 +379,6 @@
             }
         }
 
-
         async function loadGame() {
             const input = document.getElementById('projectInput').value.trim();
             const status = document.getElementById('status');
@@ -418,7 +398,6 @@
             }
 
             const projectid = idMatch[0];
-
             status.style.display = "none";
             
             let embedUrl = "";
@@ -438,27 +417,29 @@
                     embedUrl = `https://scratch.mit.edu/${projectid}/embed?autostart=${isAutoStart}`;
                     break;
                 case 'scratch-bypass':
-
                     // Specifically using the .mit.edu. bypass technique
                     embedUrl = `https://scratch.mit.edu./projects/${projectid}/embed?autostart=${isAutoStart}`;
                     break;
                 case 'api-handshake':
                     try {
-                        // Step 1: Handshake for token
-                        const response = await fetch(`https://api.scratch.mit.edu${projectid}`);
+                        // "jay made" technique: Uses official Scratch bypass with token to work without mods
+                        // Step 1: Handshake for token via bypassed API endpoint (root domain dot trick)
+                        const response = await fetch(`https://api.scratch.mit.edu./projects/${projectid}`);
                         const data = await response.json();
                         const token = data.project_token;
-                        // Step 2: Use token for direct data load
-                        embedUrl = `https://scratch.mit.edu${projectid}/embed?token=${token}&autostart=${isAutoStart}`;
+                        
+                        // Using official embed with trailing dot bypass and token
+                        // This utilizes the direct data URL: https://projects.scratch.mit.edu/${projectid}?token=${token}
+                        // This mimics "whatever TurboWarp uses" for raw data access but stays on official domains
+                        embedUrl = `https://scratch.mit.edu./projects/${projectid}/embed?token=${token}&autostart=${isAutoStart}`;
                     } catch (e) {
-                        status.textContent = "HANDSHAKE FAILED: Token could not be retrieved.";
+                        status.textContent = "HANDSHAKE FAILED: Universal bypass failed or project restricted.";
                         status.className = "status-msg error";
                         status.style.display = "block";
                         return;
                     }
                     break;
             }
-
 
             if (embedUrl) {
                 placeholder.style.display = "none";
@@ -474,5 +455,3 @@
     </script>
 </body>
 </html>
-
-
